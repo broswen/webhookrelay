@@ -27,9 +27,10 @@ func (s *Server) Router() http.Handler {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-	//r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-	//	writeErr(w, nil, ErrNotFound)
-	//})
+	r.Use(Metrics)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		writeErr(w, nil, ErrNotFound)
+	})
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		writeOK(w, http.StatusOK, "OK")
 	})

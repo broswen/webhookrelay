@@ -88,7 +88,7 @@ func (r CreateWebhookRequest) Validate() error {
 
 func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (model.Webhook, error) {
 	if err := req.Validate(); err != nil {
-		return model.Webhook{}, err
+		return model.Webhook{}, ErrInvalidRequest{Err: err}
 	}
 	//check if a request for this token already exists and return the results if it does
 	id, err := s.idem.Get(ctx, req.IdempotencyToken)

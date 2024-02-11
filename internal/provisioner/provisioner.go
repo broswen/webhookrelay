@@ -8,6 +8,7 @@ import (
 	"github.com/broswen/webhookrelay/internal/model"
 	"github.com/broswen/webhookrelay/internal/repository"
 	"github.com/rs/zerolog/log"
+	"time"
 )
 
 func NewProvisionerHandler(edge repository.Edge) *Handler {
@@ -20,11 +21,18 @@ type Handler struct {
 
 func (h *Handler) Setup(session sarama.ConsumerGroupSession) error {
 	log.Info().Any("claims", session.Claims()).Msg("acquired claims")
+	Rebalances.Inc()
+	for topic, parts := range session.Claims() {
+		AcquiredPartitionCount.WithLabelValues(topic).Set(float64(len(parts)))
+	}
 	return nil
 }
 
 func (h *Handler) Cleanup(session sarama.ConsumerGroupSession) error {
 	log.Info().Any("claims", session.Claims()).Msg("released claims")
+	for topic := range session.Claims() {
+		AcquiredPartitionCount.WithLabelValues(topic).Set(0)
+	}
 	return nil
 }
 
@@ -47,9 +55,17 @@ func (h *Handler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama
 				continue
 			}
 
-			if err := h.HandleMessage(session.Context(), message); err != nil {
+			start := time.Now()
+			err := h.HandleMessage(session.Context(), message)
+
+			if err != nil {
 				log.Error().Err(err).Msg("failed to provision")
+				ProvisionLatency.WithLabelValues("failure").Observe(float64(time.Since(start).Milliseconds()))
+				ProvisionAttempts.WithLabelValues("failure").Inc()
 				continue
+			} else {
+				ProvisionLatency.WithLabelValues("success").Observe(float64(time.Since(start).Milliseconds()))
+				ProvisionAttempts.WithLabelValues("success").Inc()
 			}
 
 			session.MarkMessage(message, "")

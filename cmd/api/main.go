@@ -8,6 +8,8 @@ import (
 	"github.com/broswen/webhookrelay/internal/db"
 	"github.com/broswen/webhookrelay/internal/repository"
 	"github.com/broswen/webhookrelay/internal/service"
+	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 )
 
 var restApiAddress = ":8080"
+var metricsAddress = ":8081"
 var redisAddress = "redis:6379"
 var postgresDSN = ""
 var edgeAddress = ""
@@ -27,6 +30,11 @@ func main() {
 	flag.StringVar(&restApiAddress, "apiAddr", os.Getenv("API_ADDR"), "rest api address")
 	if restApiAddress == "" {
 		log.Fatal().Msg("rest api address must be specified")
+	}
+
+	flag.StringVar(&metricsAddress, "metricsAddr", os.Getenv("METRICS_ADDR"), "metrics server address")
+	if metricsAddress == "" {
+		log.Fatal().Msg("metrics address must be specified")
 	}
 
 	flag.StringVar(&redisAddress, "redisAddr", os.Getenv("REDIS_ADDR"), "redis address")
@@ -93,6 +101,17 @@ func main() {
 		case <-gCtx.Done():
 			return server.Shutdown(context.Background())
 		}
+	})
+
+	eg.Go(func() error {
+		r := chi.NewRouter()
+		r.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(metricsAddress, r); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				return err
+			}
+		}
+		return nil
 	})
 
 	if err := eg.Wait(); err != nil {

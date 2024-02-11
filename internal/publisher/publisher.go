@@ -100,10 +100,18 @@ func (p *Publisher) Run(ctx context.Context) error {
 					log.Error().Err(err).Str("id", wh.Id).Msg("failed to marshall webhook while publishing")
 					continue
 				}
-				if err := p.tryProduce(wh.Id, b); err != nil {
+				start := time.Now()
+				err = p.tryProduce(wh.Id, b)
+				if err != nil {
 					log.Error().Err(err).Str("id", wh.Id).Msg("failed to publish webhook")
+					PublishLatency.WithLabelValues("failure").Observe(float64(time.Since(start).Milliseconds()))
+					PublishAttempts.WithLabelValues("failure").Inc()
 					continue
+				} else {
+					PublishLatency.WithLabelValues("success").Observe(float64(time.Since(start).Milliseconds()))
+					PublishAttempts.WithLabelValues("success").Inc()
 				}
+
 				if err := repository.NewSqlWebhookRepository(txn).MarkPublished(ctx, wh.Id); err != nil {
 					log.Error().Err(err).Str("id", wh.Id).Msg("failed to mark webhook as published")
 					continue

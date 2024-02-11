@@ -45,6 +45,7 @@ func translateError(err error) *APIError {
 	var errWebhookNotFound repository.ErrWebhookNotFound
 	var errInvalidData repository.ErrInvalidData
 	var errTokenInProgress service.ErrTokenInProgress
+	var errInvalidRequest service.ErrInvalidRequest
 	switch {
 	case errors.As(err, &errWebhookNotFound):
 		return ErrNotFound
@@ -52,6 +53,8 @@ func translateError(err error) *APIError {
 		return ErrBadRequest.WithError(err)
 	case errors.As(err, &errTokenInProgress):
 		return ErrConflict.WithError(err)
+	case errors.As(err, &errInvalidRequest):
+		return ErrBadRequest.WithError(err)
 	default:
 		return ErrUnknown
 	}

@@ -15,8 +15,10 @@ services:
       WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
       REDIS_ADDR: redis:6379
       API_ADDR: ":8080"
+      METRICS_ADDR: ":8081"
     ports:
       - "8080:8080"
+      - "8081:8081"
   publisher:
     build:
       context: .
@@ -32,6 +34,7 @@ services:
       DSN: postgres://postgres:password@postgres:5432/webhookrelay
       TOPIC: webhooks
       WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
+      METRICS_ADDR: ":8081"
   provisioner:
     build:
       context: .
@@ -46,6 +49,7 @@ services:
       TOPIC: webhooks
       GROUP: webhookrelay-provisioner
       WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
+      METRICS_ADDR: ":8081"
   postgres:
     container_name: postgres
     hostname: postgres

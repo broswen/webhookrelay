@@ -13,3 +13,15 @@ func (e ErrTokenInProgress) Error() string {
 func (e ErrTokenInProgress) Unwrap() error {
 	return nil
 }
+
+type ErrInvalidRequest struct {
+	Err error
+}
+
+func (e ErrInvalidRequest) Error() string {
+	return fmt.Sprintf("invalid request: %s", e.Err.Error())
+}
+
+func (e ErrInvalidRequest) Unwrap() error {
+	return e.Err
+}

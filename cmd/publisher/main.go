@@ -2,21 +2,31 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"github.com/broswen/webhookrelay/internal/db"
 	"github.com/broswen/webhookrelay/internal/publisher"
+	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 )
 
+var metricsAddress = ":8081"
 var postgresDSN = ""
 var brokers = ""
 var topic = ""
 
 func main() {
+
+	flag.StringVar(&metricsAddress, "metricsAddr", os.Getenv("METRICS_ADDR"), "metrics server address")
+	if metricsAddress == "" {
+		log.Fatal().Msg("metrics address must be specified")
+	}
 
 	flag.StringVar(&postgresDSN, "postgresDSN", os.Getenv("DSN"), "postgres connection DSN")
 	if postgresDSN == "" {
@@ -50,6 +60,17 @@ func main() {
 
 	eg.Go(func() error {
 		return producer.Run(gCtx)
+	})
+
+	eg.Go(func() error {
+		r := chi.NewRouter()
+		r.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(metricsAddress, r); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				return err
+			}
+		}
+		return nil
 	})
 
 	if err := eg.Wait(); err != nil {
