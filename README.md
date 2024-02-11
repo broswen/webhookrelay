@@ -16,4 +16,3 @@ WebhookRelay is an API that accepts and validates webhook requests, then provisi
 - [ ] create repository sql mocks
 - [ ] create gRPC definition and server
 - [ ] add prometheus metrics
-- [ ] create openapi spec

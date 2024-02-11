@@ -1,0 +1,174 @@
+openapi: 3.0.0
+info:
+  title: WebhookRelay
+  description: |
+    An API to manage and provision webhooks to WebhookDispatcher
+  version: 1.0.0
+
+servers:
+  - url: https://webhookrelay.broswen.com/api
+
+paths:
+  /webhooks:
+    get:
+      tags:
+        - Webhook
+      summary: List webhooks
+      description: List the details for multiple webhooks.
+      parameters:
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/deleted"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/response"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/webhook"
+
+    post:
+      tags:
+        - Webhook
+      summary: Create a webhook
+      description: Create a new webhook.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: string
+                  description: A url to send the webhook payload to
+                payload:
+                  type: string
+                  description: The base64 encoded bytes payload. To be decoded before sending to the target.
+                idempotencyToken:
+                  type: string
+                  description: The idempotency token for the request
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/response"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/webhook"
+
+  /webhooks/{webhookId}:
+    get:
+      tags:
+        - Webhook
+      summary: Get a webhook
+      description: Get the details for a single webhook.
+      parameters:
+        - $ref: "#/components/parameters/webhookId"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/response"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/webhook"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    timestamp:
+      type: string
+      description: a timestamp represented in RFC3339 nano format
+      example: 2022-08-15T02:57:56.753876Z
+    webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        target:
+          type: string
+        payload:
+          type: string
+        description:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/timestamp"
+        deleted_at:
+          $ref: "#/components/schemas/timestamp"
+        published_at:
+          $ref: "#/components/schemas/timestamp"
+        provisioned_at:
+          $ref: "#/components/schemas/timestamp"
+        attempts:
+          type: array
+          items:
+            $ref: "#/components/schemas/attempt"
+    attempt:
+      type: object
+      properties:
+        timestamp:
+          $ref: "#/components/schemas/timestamp"
+        targetStatus:
+          type: integer
+        message:
+          type: string
+    response:
+      type: object
+      properties:
+        data:
+          type: object
+        success:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+
+  parameters:
+    webhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: 8eafc880-9493-4d00-b9e7-389e9ce989fd
+    deleted:
+      name: deleted
+      in: query
+      required: false
+      schema:
+        type: boolean
+      example: false
+    limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 100
+    offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+      example: 0
