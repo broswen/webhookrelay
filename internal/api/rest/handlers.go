@@ -64,14 +64,14 @@ func HandleCreateWebhook(webhookService service.Webhook) http.HandlerFunc {
 		}
 
 		// TODO handle conflict error code with in progress idempotency token
-		n, err := webhookService.Create(r.Context(), req)
+		wh, err := webhookService.Create(r.Context(), req)
 		if err != nil {
 			log.Error().Err(err).Msg("error creating webhook")
 			writeErr(w, nil, err)
 			return
 		}
 
-		err = writeOK(w, http.StatusOK, n)
+		err = writeOK(w, http.StatusOK, wh)
 		if err != nil {
 			writeErr(w, nil, err)
 			return

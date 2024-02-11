@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/broswen/webhookrelay/internal/repository"
+	"github.com/broswen/webhookrelay/internal/service"
 	"net/http"
 )
 
 var (
 	ErrUnknown        = NewAPIError(http.StatusInternalServerError, 9999, "unknown error")
+	ErrConflict       = NewAPIError(http.StatusConflict, 9409, "conflict")
 	ErrInternalServer = NewAPIError(http.StatusInternalServerError, 9500, "internal error")
 	ErrBadRequest     = NewAPIError(http.StatusBadRequest, 9400, "bad request")
 	ErrNotFound       = NewAPIError(http.StatusNotFound, 9404, "not found")
@@ -42,11 +44,14 @@ func NewAPIError(status, code int, message string) *APIError {
 func translateError(err error) *APIError {
 	var errWebhookNotFound repository.ErrWebhookNotFound
 	var errInvalidData repository.ErrInvalidData
+	var errTokenInProgress service.ErrTokenInProgress
 	switch {
 	case errors.As(err, &errWebhookNotFound):
 		return ErrNotFound
 	case errors.As(err, &errInvalidData):
 		return ErrBadRequest.WithError(err)
+	case errors.As(err, &errTokenInProgress):
+		return ErrConflict.WithError(err)
 	default:
 		return ErrUnknown
 	}

@@ -44,9 +44,9 @@ func (r *SqlWebhookRepository) List(ctx context.Context, deleted bool, offset in
 	var rows *sql.Rows
 	var err error
 	if deleted {
-		rows, err = r.conn.QueryContext(ctx, `select id, target, payload, created_at, published_at, deleted_at from webhooks where deleted_at is null offset $1 limit $2;`, offset, limit)
-	} else {
 		rows, err = r.conn.QueryContext(ctx, `select id, target, payload, created_at, published_at, deleted_at from webhooks where deleted_at is not null offset $1 limit $2;`, offset, limit)
+	} else {
+		rows, err = r.conn.QueryContext(ctx, `select id, target, payload, created_at, published_at, deleted_at from webhooks where deleted_at is null offset $1 limit $2;`, offset, limit)
 	}
 	err = db.PgError(err)
 	if err != nil {
@@ -60,6 +60,7 @@ func (r *SqlWebhookRepository) List(ctx context.Context, deleted bool, offset in
 		if err != nil {
 			return whs, err
 		}
+		whs = append(whs, wh)
 	}
 	if rows.Err() != nil {
 		return whs, db.PgError(err)

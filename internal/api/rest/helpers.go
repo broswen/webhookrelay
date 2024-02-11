@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
 	"strconv"
@@ -55,7 +54,7 @@ func pagination(r *http.Request) Pagination {
 
 func webhookId(r *http.Request) (string, error) {
 	projectId := chi.URLParam(r, WEBHOOK_ID_KEY)
-	if len(projectId) != 27 {
+	if len(projectId) != 36 {
 		return projectId, ErrBadRequest.WithError(errors.New("invalid webhook id"))
 	}
 	return projectId, nil
@@ -97,7 +96,6 @@ func writeOK(w http.ResponseWriter, status int, data any) error {
 }
 
 func writeErr(w http.ResponseWriter, data any, err error) error {
-	log.Debug().Err(err).Msg("debugging errors")
 	var apiError *APIError
 	ok := errors.As(err, &apiError)
 	if !ok {

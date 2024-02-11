@@ -38,10 +38,13 @@ func (s *WebhookService) Get(ctx context.Context, id string) (model.Webhook, err
 		log.Error().Err(err).Str("id", id).Msg("failed to get webhook")
 		return model.Webhook{}, err
 	}
-	//TODO merge metadata with webhook model
-	_, err = s.edge.Get(ctx, id)
-	if err != nil {
+	// TODO check if error or 404
+	ewh, err := s.edge.Get(ctx, id)
+	if err != nil && !errors.Is(err, repository.ErrWebhookNotFound{}) {
 		log.Error().Err(err).Str("id", id).Msg("failed to get webhook from edge")
+	} else {
+		wh.ProvisionedAt = ewh.ProvisionedAt
+		wh.Attempts = ewh.Attempts
 	}
 	return wh, nil
 }
@@ -51,12 +54,16 @@ func (s *WebhookService) List(ctx context.Context, deleted bool, offset int64, l
 	whs, err := repository.NewSqlWebhookRepository(s.db).List(ctx, deleted, offset, limit)
 	if err != nil {
 		log.Error().Err(err).Int64("offset", offset).Int64("limit", limit).Bool("deleted", deleted).Msg("failed to list webhooks")
+		return nil, err
 	}
 	for _, wh := range whs {
-		//TODO merge metadata with webhook model
-		_, err = s.edge.Get(ctx, wh.Id)
-		if err != nil {
+		//TODO check if error or 404
+		ewh, err := s.edge.Get(ctx, wh.Id)
+		if err != nil && !errors.Is(err, repository.ErrWebhookNotFound{}) {
 			log.Error().Err(err).Str("id", wh.Id).Msg("failed to get webhook from edge")
+		} else {
+			wh.ProvisionedAt = ewh.ProvisionedAt
+			wh.Attempts = ewh.Attempts
 		}
 	}
 
@@ -91,8 +98,8 @@ func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (
 		}
 	} else {
 		// if token exists in cache, check it's not associated to an in-progress request
-		if id == "__inprogress" {
-			return model.Webhook{}, errors.New("request for existing token in progress")
+		if id == repository.InProgressKey {
+			return model.Webhook{}, ErrTokenInProgress{token: req.IdempotencyToken}
 		}
 
 		// else return the previously created webhook
@@ -102,7 +109,7 @@ func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (
 		}
 	}
 
-	err = s.idem.Set(ctx, req.IdempotencyToken, "__inprogress", time.Second*30)
+	err = s.idem.Set(ctx, req.IdempotencyToken, repository.InProgressKey, time.Second*15)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to bookmark idempotency token")
 	}

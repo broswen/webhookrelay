@@ -9,12 +9,11 @@ WebhookRelay is an API that accepts and validates webhook requests, then provisi
 
 
 ### TODO
-- [ ] wrangler error types up and make everything nice values to compare
-    - make http error codes work nicely
+- [ ] handle nullable times with json/sql
+  - null time should be `null` in json
 - [ ] create helm chart to render k8s manifests
 - [ ] create service mocks
 - [ ] create repository sql mocks
 - [ ] create gRPC definition and server
-- [ ] define contract for WebhookDispatcher api
 - [ ] add prometheus metrics
 - [ ] create openapi spec

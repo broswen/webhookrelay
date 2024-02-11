@@ -11,7 +11,7 @@ import (
 )
 
 type Edge interface {
-	Get(ctx context.Context, id string) (model.Webhook, error)
+	Get(ctx context.Context, id string) (model.EdgeWebhook, error)
 	Create(ctx context.Context, webhook model.Webhook) error
 }
 
@@ -33,15 +33,18 @@ type EdgeRepository struct {
 
 //TODO decide on model for webhook metadata and dispatcher store
 
-func (r *EdgeRepository) Get(ctx context.Context, id string) (model.Webhook, error) {
+func (r *EdgeRepository) Get(ctx context.Context, id string) (model.EdgeWebhook, error) {
 	res, err := r.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/webhook/%s", id), nil)
 	if err != nil {
-		return model.Webhook{}, err
+		return model.EdgeWebhook{}, err
 	}
-	wh := model.Webhook{}
+	wh := model.EdgeWebhook{}
 	err = json.NewDecoder(res.Body).Decode(&wh)
 	if err != nil {
-		return model.Webhook{}, err
+		if res.StatusCode == http.StatusNotFound {
+			return model.EdgeWebhook{}, ErrWebhookNotFound{id: id}
+		}
+		return model.EdgeWebhook{}, err
 	}
 	return wh, nil
 }
@@ -49,7 +52,12 @@ func (r *EdgeRepository) Get(ctx context.Context, id string) (model.Webhook, err
 //TODO decide on model for webhook metadata and dispatcher store
 
 func (r *EdgeRepository) Create(ctx context.Context, webhook model.Webhook) error {
-	b, err := json.Marshal(&webhook)
+	edgeWebhook := model.EdgeWebhook{
+		Id:      webhook.Id,
+		Target:  webhook.Target,
+		Payload: webhook.Payload,
+	}
+	b, err := json.Marshal(&edgeWebhook)
 	if err != nil {
 		return err
 	}
@@ -58,6 +66,7 @@ func (r *EdgeRepository) Create(ctx context.Context, webhook model.Webhook) erro
 		return err
 	}
 	defer res.Body.Close()
+	//TODO check for failure or existing webhook
 	return nil
 }
 
