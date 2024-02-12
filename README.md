@@ -9,8 +9,6 @@ WebhookRelay is an API that accepts and validates webhook requests, then provisi
 
 
 ### TODO
-- [ ] handle nullable times with json/sql
-  - null time should be `null` in json
 - [ ] create helm chart to render k8s manifests
 - [ ] create service mocks
 - [ ] create repository sql mocks
