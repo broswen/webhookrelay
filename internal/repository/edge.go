@@ -34,7 +34,7 @@ type EdgeRepository struct {
 //TODO decide on model for webhook metadata and dispatcher store
 
 func (r *EdgeRepository) Get(ctx context.Context, id string) (model.EdgeWebhook, error) {
-	res, err := r.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/webhook/%s", id), nil)
+	res, err := r.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/api/webhooks/%s", id), nil)
 	if err != nil {
 		return model.EdgeWebhook{}, err
 	}
@@ -61,7 +61,7 @@ func (r *EdgeRepository) Create(ctx context.Context, webhook model.Webhook) erro
 	if err != nil {
 		return err
 	}
-	res, err := r.makeRequest(ctx, http.MethodPost, "/webhook", bytes.NewReader(b))
+	res, err := r.makeRequest(ctx, http.MethodPost, "/api/webhooks", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}

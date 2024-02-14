@@ -44,6 +44,7 @@ type Webhook struct {
 	PublishedAt   NullableTime     `json:"publishedAt"`
 	ProvisionedAt NullableTime     `json:"provisionedAt"`
 	Attempts      []WebhookAttempt `json:"attempts"`
+	Status        string           `json:"status"`
 }
 
 type EdgeWebhook struct {
@@ -52,6 +53,7 @@ type EdgeWebhook struct {
 	Payload       []byte           `json:"payload"`
 	ProvisionedAt NullableTime     `json:"provisionedAt"`
 	Attempts      []WebhookAttempt `json:"attempts"`
+	Status        string           `json:"status"`
 }
 
 type WebhookAttempt struct {

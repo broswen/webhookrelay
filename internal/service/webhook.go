@@ -45,6 +45,7 @@ func (s *WebhookService) Get(ctx context.Context, id string) (model.Webhook, err
 	} else {
 		wh.ProvisionedAt = ewh.ProvisionedAt
 		wh.Attempts = ewh.Attempts
+		wh.Status = ewh.Status
 	}
 	return wh, nil
 }
@@ -64,6 +65,7 @@ func (s *WebhookService) List(ctx context.Context, deleted bool, offset int64, l
 		} else {
 			wh.ProvisionedAt = ewh.ProvisionedAt
 			wh.Attempts = ewh.Attempts
+			wh.Status = ewh.Status
 		}
 	}
 
