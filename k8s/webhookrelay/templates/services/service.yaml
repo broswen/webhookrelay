@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-api
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.api.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-publisher
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.publisher.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: publisher
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-provisioner
+  namespace: {{ .Values.namespace }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.provisioner.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: provisioner
+---

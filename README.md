@@ -9,7 +9,6 @@ WebhookRelay is an API that accepts and validates webhook requests, then provisi
 
 
 ### TODO
-- [ ] create helm chart to render k8s manifests
 - [ ] create service mocks
 - [ ] create repository sql mocks
 - [ ] create gRPC definition and server

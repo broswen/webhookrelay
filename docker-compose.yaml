@@ -33,7 +33,6 @@ services:
       BROKERS: broker:9092
       DSN: postgres://postgres:password@postgres:5432/webhookrelay
       TOPIC: webhooks
-      WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
       METRICS_ADDR: ":8081"
   provisioner:
     build:

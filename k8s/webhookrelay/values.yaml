@@ -1,0 +1,67 @@
+namespace: webhookrelay
+api:
+  image:
+    repository: broswen/webhookrelay-api
+    pullPolicy: IfNotPresent
+    tag: ""
+  replicas: 2
+  resources: {}
+  service:
+    port: 8080
+  metrics:
+    port: 8081
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+  environment:
+    WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
+    REDIS_ADDR: redis:6379
+    API_ADDR: ":8080"
+    METRICS_ADDR: ":8081"
+    ACCESS_ID: 0942aee855760a08fc7ecbb89f40127c.access
+  secrets:
+    DSN: postgres://postgres:password@postgres:5432/webhookrelay
+    ACCESS_SECRET: <replace me>
+
+publisher:
+  image:
+    repository: broswen/webhookrelay-publisher
+    pullPolicy: IfNotPresent
+    tag: ""
+  replicas: 2
+  resources: {}
+  metrics:
+    port: 8081
+  environment:
+    BROKERS: broker:9092
+    TOPIC: webhooks
+    METRICS_ADDR: ":8081"
+  secrets:
+    DSN: postgres://postgres:password@postgres:5432/webhookrelay
+
+provisioner:
+  image:
+    repository: broswen/webhookrelay-provisioner
+    pullPolicy: IfNotPresent
+    tag: ""
+  replicas: 2
+  resources: {}
+  metrics:
+    port: 8081
+  environment:
+    BROKERS: broker:9092
+    TOPIC: webhooks
+    GROUP: webhookrelay-provisioner
+    WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
+    METRICS_ADDR: ":8081"
+    ACCESS_ID: 0942aee855760a08fc7ecbb89f40127c.access
+  secrets:
+    ACCESS_SECRET: <replace me>
+
+podAnnotations: {}
+podLabels: {}

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhookrelay-publisher
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.publisher.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webhookrelay
+      app.kubernetes.io/instance: publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webhookrelay
+        app.kubernetes.io/instance: publisher
+    spec:
+      containers:
+        - name: publisher
+          image: "{{ .Values.publisher.image.repository }}:{{ .Values.publisher.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.publisher.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: webhookrelay-publisher
+            - secretRef:
+                name: webhookrelay-publisher
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.publisher.metrics.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.publisher.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.publisher.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.publisher.resources | nindent 12 }}

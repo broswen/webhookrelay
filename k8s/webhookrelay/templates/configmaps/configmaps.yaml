@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-api
+  namespace: {{ .Values.namespace }}
+data:
+  {{- range $key, $value := .Values.api.environment }}
+  {{ $key }}: {{ $value }}
+  {{- end}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-publisher
+  namespace: {{ .Values.namespace }}
+data:
+  {{- range $key, $value := .Values.publisher.environment }}
+  {{ $key }}: {{ $value }}
+  {{- end}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-provisioner
+  namespace: {{ .Values.namespace }}
+data:
+  {{- range $key, $value := .Values.provisioner.environment }}
+  {{ $key }}: {{ $value }}
+  {{- end}}

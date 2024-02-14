@@ -1,0 +1,262 @@
+---
+# Source: webhookrelay/templates/secrets/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhookrelay-api
+  namespace: webhookrelay
+data:
+  ACCESS_SECRET: <replace me>
+  DSN: postgres://postgres:password@postgres:5432/webhookrelay
+---
+# Source: webhookrelay/templates/secrets/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhookrelay-publisher
+  namespace: webhookrelay
+data:
+  DSN: postgres://postgres:password@postgres:5432/webhookrelay
+---
+# Source: webhookrelay/templates/secrets/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webhookrelay-provisioner
+  namespace: webhookrelay
+data:
+  ACCESS_SECRET: <replace me>
+---
+# Source: webhookrelay/templates/configmaps/configmaps.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-api
+  namespace: webhookrelay
+data:
+  ACCESS_ID: 0942aee855760a08fc7ecbb89f40127c.access
+  API_ADDR: :8080
+  METRICS_ADDR: :8081
+  REDIS_ADDR: redis:6379
+  WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
+---
+# Source: webhookrelay/templates/configmaps/configmaps.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-publisher
+  namespace: webhookrelay
+data:
+  BROKERS: broker:9092
+  METRICS_ADDR: :8081
+  TOPIC: webhooks
+---
+# Source: webhookrelay/templates/configmaps/configmaps.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhookrelay-provisioner
+  namespace: webhookrelay
+data:
+  ACCESS_ID: 0942aee855760a08fc7ecbb89f40127c.access
+  BROKERS: broker:9092
+  GROUP: webhookrelay-provisioner
+  METRICS_ADDR: :8081
+  TOPIC: webhooks
+  WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
+---
+# Source: webhookrelay/templates/services/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-api
+  namespace: webhookrelay
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 8081
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: api
+---
+# Source: webhookrelay/templates/services/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-publisher
+  namespace: webhookrelay
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: publisher
+---
+# Source: webhookrelay/templates/services/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhookrelay-provisioner
+  namespace: webhookrelay
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: webhookrelay
+    app.kubernetes.io/instance: provisioner
+---
+# Source: webhookrelay/templates/deployments/api.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhookrelay-api
+  namespace: webhookrelay
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webhookrelay
+      app.kubernetes.io/instance: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webhookrelay
+        app.kubernetes.io/instance: api
+    spec:
+      containers:
+        - name: api
+          image: "broswen/webhookrelay-api:1.16.0"
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: webhookrelay-api
+            - secretRef:
+                name: webhookrelay-api
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+---
+# Source: webhookrelay/templates/deployments/provisioner.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhookrelay-provisioner
+  namespace: webhookrelay
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webhookrelay
+      app.kubernetes.io/instance: provisioner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webhookrelay
+        app.kubernetes.io/instance: provisioner
+    spec:
+      containers:
+        - name: provisioner
+          image: "broswen/webhookrelay-provisioner:1.16.0"
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: webhookrelay-provisioner
+            - secretRef:
+                name: webhookrelay-provisioner
+          ports:
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          resources:
+            {}
+---
+# Source: webhookrelay/templates/deployments/publisher.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhookrelay-publisher
+  namespace: webhookrelay
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webhookrelay
+      app.kubernetes.io/instance: publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webhookrelay
+        app.kubernetes.io/instance: publisher
+    spec:
+      containers:
+        - name: publisher
+          image: "broswen/webhookrelay-publisher:1.16.0"
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: webhookrelay-publisher
+            - secretRef:
+                name: webhookrelay-publisher
+          ports:
+            - name: metrics
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            null
+          readinessProbe:
+            null
+          resources:
+            {}
+---
+# Source: webhookrelay/templates/services/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webhookrelay-api
+  namespace: webhookrelay
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: webhookrelay.broswen.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: webhookrelay-api
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix

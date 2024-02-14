@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webhookrelay-api
+  namespace: {{ .Values.namespace }}
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: webhookrelay.broswen.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: webhookrelay-api
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix
