@@ -9,7 +9,7 @@ servers:
   - url: https://webhookrelay.broswen.com/api
 
 paths:
-  /webhooks:
+  /api/webhooks:
     get:
       tags:
         - Webhook
@@ -50,7 +50,7 @@ paths:
                   description: A url to send the webhook payload to
                 payload:
                   type: string
-                  description: The base64 encoded bytes payload. To be decoded before sending to the target.
+                  description: The base64 encoded bytes payload. Will be decoded before sending to the target.
                 idempotencyToken:
                   type: string
                   description: The idempotency token for the request
@@ -67,7 +67,7 @@ paths:
                       data:
                         $ref: "#/components/schemas/webhook"
 
-  /webhooks/{webhookId}:
+  /api/webhooks/{webhookId}:
     get:
       tags:
         - Webhook
@@ -106,10 +106,10 @@ components:
           type: string
         target:
           type: string
+          description: webhook target URL
         payload:
           type: string
-        description:
-          type: string
+          description: base64 encoded bytes payload
         created_at:
           $ref: "#/components/schemas/timestamp"
         deleted_at:
@@ -122,15 +122,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/attempt"
+        status:
+          type: string
+          enum:
+            - UNKNOWN
+            - PENDING
+            - FAILED
+            - SUCCEEDED
     attempt:
       type: object
       properties:
         timestamp:
           $ref: "#/components/schemas/timestamp"
-        targetStatus:
+        status:
           type: integer
+          description: HTTP response status code from target
         message:
           type: string
+          description: attempt details
     response:
       type: object
       properties:
