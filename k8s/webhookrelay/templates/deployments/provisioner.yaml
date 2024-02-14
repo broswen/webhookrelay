@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: provisioner
-          image: "{{ .Values.provisioner.image.repository }}:{{ .Values.provisioner.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.provisioner.image.repository }}:{{ .Values.provisioner.image.tag }}"
           imagePullPolicy: {{ .Values.provisioner.image.pullPolicy }}
           envFrom:
             - configMapRef:

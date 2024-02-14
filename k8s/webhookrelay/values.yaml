@@ -2,8 +2,8 @@ namespace: webhookrelay
 api:
   image:
     repository: broswen/webhookrelay-api
-    pullPolicy: IfNotPresent
-    tag: ""
+    pullPolicy: Always
+    tag: "latest"
   replicas: 2
   resources: {}
   service:
@@ -12,49 +12,49 @@ api:
     port: 8081
   livenessProbe:
     httpGet:
-      path: /
+      path: /healthcheck
       port: http
   readinessProbe:
     httpGet:
-      path: /
+      path: /healthcheck
       port: http
   environment:
     WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
-    REDIS_ADDR: redis:6379
+    REDIS_ADDR: "sentinel-0.sentinel.redis-sentinel.svc.cluster.local:26379,sentinel-1.sentinel.redis-sentinel.svc.cluster.local:26379,sentinel-2.sentinel.redis-sentinel.svc.cluster.local:26379"
     API_ADDR: ":8080"
     METRICS_ADDR: ":8081"
     ACCESS_ID: 0942aee855760a08fc7ecbb89f40127c.access
   secrets:
-    DSN: postgres://postgres:password@postgres:5432/webhookrelay
+    DSN: cG9zdGdyZXM6Ly9wb3N0Z3JlczpwYXNzd29yZEBwb3N0Z3Jlcy5wb3N0Z3Jlcy5zdmMuY2x1c3Rlci5sb2NhbDo1NDMyL3dlYmhvb2tyZWxheQ==
     ACCESS_SECRET: <replace me>
 
 publisher:
   image:
     repository: broswen/webhookrelay-publisher
-    pullPolicy: IfNotPresent
-    tag: ""
+    pullPolicy: Always
+    tag: "latest"
   replicas: 2
   resources: {}
   metrics:
     port: 8081
   environment:
-    BROKERS: broker:9092
+    BROKERS: kafka-clusterip.kafka.svc.cluster.local:9092
     TOPIC: webhooks
     METRICS_ADDR: ":8081"
   secrets:
-    DSN: postgres://postgres:password@postgres:5432/webhookrelay
+    DSN: cG9zdGdyZXM6Ly9wb3N0Z3JlczpwYXNzd29yZEBwb3N0Z3Jlcy5wb3N0Z3Jlcy5zdmMuY2x1c3Rlci5sb2NhbDo1NDMyL3dlYmhvb2tyZWxheQ==
 
 provisioner:
   image:
     repository: broswen/webhookrelay-provisioner
-    pullPolicy: IfNotPresent
-    tag: ""
+    pullPolicy: Always
+    tag: "latest"
   replicas: 2
   resources: {}
   metrics:
     port: 8081
   environment:
-    BROKERS: broker:9092
+    BROKERS: kafka-clusterip.kafka.svc.cluster.local:9092
     TOPIC: webhooks
     GROUP: webhookrelay-provisioner
     WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com

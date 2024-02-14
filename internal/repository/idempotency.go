@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
+	"strings"
 	"time"
 )
 
@@ -14,8 +15,9 @@ type Idempotency interface {
 }
 
 func NewRedisIdempotencyRepository(address string) (Idempotency, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr: address,
+	rdb := redis.NewFailoverClient(&redis.FailoverOptions{
+		MasterName:    "mymaster",
+		SentinelAddrs: strings.Split(address, ","),
 	})
 
 	return &RedisIdempotencyRepository{redis: rdb}, nil
