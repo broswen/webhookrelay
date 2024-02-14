@@ -57,15 +57,17 @@ func (s *WebhookService) List(ctx context.Context, deleted bool, offset int64, l
 		log.Error().Err(err).Int64("offset", offset).Int64("limit", limit).Bool("deleted", deleted).Msg("failed to list webhooks")
 		return nil, err
 	}
-	for _, wh := range whs {
+	for i, wh := range whs {
 		//TODO check if error or 404
 		ewh, err := s.edge.Get(ctx, wh.Id)
-		if err != nil && !errors.Is(err, repository.ErrWebhookNotFound{}) {
-			log.Error().Err(err).Str("id", wh.Id).Msg("failed to get webhook from edge")
+		if err != nil {
+			if !errors.Is(err, repository.ErrWebhookNotFound{}) {
+				log.Error().Err(err).Str("id", wh.Id).Msg("failed to get webhook from edge")
+			}
 		} else {
-			wh.ProvisionedAt = ewh.ProvisionedAt
-			wh.Attempts = ewh.Attempts
-			wh.Status = ewh.Status
+			whs[i].ProvisionedAt = ewh.ProvisionedAt
+			whs[i].Attempts = ewh.Attempts
+			whs[i].Status = ewh.Status
 		}
 	}
 
@@ -107,7 +109,7 @@ func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (
 		// else return the previously created webhook
 		if id != "" {
 			log.Debug().Str("id", id).Str("token", req.IdempotencyToken).Msg("previous request completed")
-			return repository.NewSqlWebhookRepository(s.db).Get(ctx, id)
+			return s.Get(ctx, id)
 		}
 	}
 

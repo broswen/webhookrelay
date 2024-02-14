@@ -12,7 +12,7 @@ services:
       ./bin/webhookrelay-api"
     environment:
       DSN: postgres://postgres:password@postgres:5432/webhookrelay
-      WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
+      WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
       REDIS_ADDR: redis:6379
       API_ADDR: ":8080"
       METRICS_ADDR: ":8081"
@@ -48,7 +48,7 @@ services:
       BROKERS: broker:9092
       TOPIC: webhooks
       GROUP: webhookrelay-provisioner
-      WEBHOOKDISPATCHER_ADDRESS: https://honeypot.broswen.com
+      WEBHOOKDISPATCHER_ADDRESS: https://webhookdispatcher.broswen.com
       METRICS_ADDR: ":8081"
   postgres:
     container_name: postgres
