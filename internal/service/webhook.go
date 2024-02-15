@@ -42,6 +42,7 @@ func (s *WebhookService) Get(ctx context.Context, id string) (model.Webhook, err
 	ewh, err := s.edge.Get(ctx, id)
 	if err != nil && !errors.Is(err, repository.ErrWebhookNotFound{}) {
 		log.Error().Err(err).Str("id", id).Msg("failed to get webhook from edge")
+		wh.Status = "UNKNOWN"
 	} else {
 		wh.ProvisionedAt = ewh.ProvisionedAt
 		wh.Attempts = ewh.Attempts
@@ -64,6 +65,7 @@ func (s *WebhookService) List(ctx context.Context, deleted bool, offset int64, l
 			if !errors.Is(err, repository.ErrWebhookNotFound{}) {
 				log.Error().Err(err).Str("id", wh.Id).Msg("failed to get webhook from edge")
 			}
+			whs[i].Status = "UNKNOWN"
 		} else {
 			whs[i].ProvisionedAt = ewh.ProvisionedAt
 			whs[i].Attempts = ewh.Attempts
@@ -123,6 +125,7 @@ func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (
 		log.Error().Err(err).Msg("failed to create webhook")
 		return model.Webhook{}, err
 	}
+	wh.Status = "UNKNOWN"
 
 	err = s.idem.Set(ctx, req.IdempotencyToken, wh.Id, time.Minute*10)
 	if err != nil {
