@@ -14,6 +14,10 @@ spec:
       labels:
         app.kubernetes.io/name: webhookrelay
         app.kubernetes.io/instance: provisioner
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
     spec:
       containers:
         - name: provisioner
