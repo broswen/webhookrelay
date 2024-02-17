@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/IBM/sarama"
 	"github.com/broswen/webhookrelay/internal/repository"
+	"github.com/broswen/webhookrelay/internal/retry"
 	"github.com/rs/zerolog/log"
 	"time"
 )
@@ -50,17 +51,13 @@ func (p *Publisher) Close() error {
 }
 
 func (p *Publisher) tryProduce(key string, body []byte) error {
-	initialTimeout := time.Millisecond * 10
-	timeout := initialTimeout
-	retries := 3
-	err := p.produce(key, body)
-	for err != nil && retries > 0 {
-		log.Error().Err(err).Msgf("failed to produce message, retrying %v", timeout)
-		time.Sleep(timeout)
-		err = p.produce(key, body)
-		retries -= 1
-		timeout = timeout * initialTimeout
-	}
+	_, err := retry.NewRetry(time.Millisecond*50, 3, func() (any, error, bool) {
+		err := p.produce(key, body)
+		if err != nil {
+			log.Error().Err(err).Msgf("failed to produce message: %v", err)
+		}
+		return nil, err, true
+	})()
 	return err
 }
 
@@ -94,7 +91,6 @@ func (p *Publisher) Run(ctx context.Context) error {
 			log.Debug().Msgf("locked %d rows for publishing", len(whs))
 
 			for _, wh := range whs {
-				//TODO standardize kafka message format
 				b, err := json.Marshal(&wh)
 				if err != nil {
 					log.Error().Err(err).Str("id", wh.Id).Msg("failed to marshall webhook while publishing")

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/broswen/webhookrelay/internal/model"
+	"github.com/broswen/webhookrelay/internal/retry"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Edge interface {
@@ -31,10 +33,11 @@ type EdgeRepository struct {
 	client       *http.Client
 }
 
-//TODO decide on model for webhook metadata and dispatcher store
-
 func (r *EdgeRepository) Get(ctx context.Context, id string) (model.EdgeWebhook, error) {
-	res, err := r.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/api/webhooks/%s", id), nil)
+	res, err := retry.NewRetry(time.Millisecond*50, 3, func() (*http.Response, error, bool) {
+		res, err := r.makeRequest(ctx, http.MethodGet, fmt.Sprintf("/api/webhooks/%s", id), nil)
+		return res, err, true
+	})()
 	if err != nil {
 		return model.EdgeWebhook{}, err
 	}
@@ -49,8 +52,6 @@ func (r *EdgeRepository) Get(ctx context.Context, id string) (model.EdgeWebhook,
 	return wh, nil
 }
 
-//TODO decide on model for webhook metadata and dispatcher store
-
 func (r *EdgeRepository) Create(ctx context.Context, webhook model.Webhook) error {
 	edgeWebhook := model.EdgeWebhook{
 		Id:      webhook.Id,
@@ -61,12 +62,15 @@ func (r *EdgeRepository) Create(ctx context.Context, webhook model.Webhook) erro
 	if err != nil {
 		return err
 	}
-	res, err := r.makeRequest(ctx, http.MethodPost, "/api/webhooks", bytes.NewReader(b))
+	res, err := retry.NewRetry(time.Millisecond*50, 3, func() (*http.Response, error, bool) {
+		res, err := r.makeRequest(ctx, http.MethodPost, "/api/webhooks", bytes.NewReader(b))
+		return res, err, true
+	})()
+
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
-	//TODO check for failure or existing webhook
 	return nil
 }
 

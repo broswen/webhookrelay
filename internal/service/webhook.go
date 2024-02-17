@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/broswen/webhookrelay/internal/model"
 	"github.com/broswen/webhookrelay/internal/repository"
-	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"net/url"
 	"time"
@@ -99,23 +98,19 @@ func (s *WebhookService) Create(ctx context.Context, req CreateWebhookRequest) (
 	//check if a request for this token already exists and return the results if it does
 	id, err := s.idem.Get(ctx, req.IdempotencyToken)
 	if err != nil {
-		if !errors.Is(err, redis.Nil) {
+		if !errors.Is(err, repository.ErrNoKey) {
 			log.Error().Err(err).Msg("failed to check idempotency token")
 		}
 	} else {
 		// if token exists in cache, check it's not associated to an in-progress request
-		if id == repository.InProgressKey {
+		if id == "" {
 			return model.Webhook{}, ErrTokenInProgress{token: req.IdempotencyToken}
 		}
-
-		// else return the previously created webhook
-		if id != "" {
-			log.Debug().Str("id", id).Str("token", req.IdempotencyToken).Msg("previous request completed")
-			return s.Get(ctx, id)
-		}
+		log.Debug().Str("id", id).Str("token", req.IdempotencyToken).Msg("previous request completed")
+		return s.Get(ctx, id)
 	}
 
-	err = s.idem.Set(ctx, req.IdempotencyToken, repository.InProgressKey, time.Second*15)
+	err = s.idem.Set(ctx, req.IdempotencyToken, "", time.Second*15)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to bookmark idempotency token")
 	}
