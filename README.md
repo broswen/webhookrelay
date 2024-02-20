@@ -4,6 +4,10 @@ WebhookRelay is an API that accepts and validates webhook requests, then provisi
 
 ![diagram](diagram.png)
 
+Sends webhook requests to the [WebhookDispatcher](https://github.com/broswen/webhookdispatcher).
+
+
+
 ### Components
 - API, a REST API server used to create and get webhooks.
 - publisher, an outbox service that publishes new webhooks to a kafka topic for provisioner
