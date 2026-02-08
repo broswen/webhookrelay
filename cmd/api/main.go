@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"github.com/broswen/webhookrelay/internal/api/grpc"
 	"github.com/broswen/webhookrelay/internal/api/rest"
 	"github.com/broswen/webhookrelay/internal/db"
 	"github.com/broswen/webhookrelay/internal/repository"
@@ -12,12 +13,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 )
 
 var restApiAddress = ":8080"
+var grpcApiAddress = ":8000"
 var metricsAddress = ":8081"
 var redisAddress = "redis:6379"
 var postgresDSN = ""
@@ -30,6 +33,11 @@ func main() {
 	flag.StringVar(&restApiAddress, "apiAddr", os.Getenv("API_ADDR"), "rest api address")
 	if restApiAddress == "" {
 		log.Fatal().Msg("rest api address must be specified")
+	}
+
+	flag.StringVar(&grpcApiAddress, "grpcAddr", os.Getenv("GRPC_ADDR"), "grpc api address")
+	if grpcApiAddress == "" {
+		log.Fatal().Msg("grpc api address must be specified")
 	}
 
 	flag.StringVar(&metricsAddress, "metricsAddr", os.Getenv("METRICS_ADDR"), "metrics server address")
@@ -78,17 +86,18 @@ func main() {
 	defer cancel()
 	eg, gCtx := errgroup.WithContext(ctx)
 
+	// Setup REST server
 	restServer := rest.Server{
 		Webhooks: webhooks,
 	}
-	server := http.Server{
+	httpServer := http.Server{
 		Addr:    restApiAddress,
 		Handler: restServer.Router(),
 	}
 
 	eg.Go(func() error {
 		log.Debug().Msgf("rest api listening on %s", restApiAddress)
-		if err := server.ListenAndServe(); err != nil {
+		if err := httpServer.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
@@ -99,7 +108,35 @@ func main() {
 	eg.Go(func() error {
 		select {
 		case <-gCtx.Done():
-			return server.Shutdown(context.Background())
+			return httpServer.Shutdown(context.Background())
+		}
+	})
+
+	// Setup gRPC server
+	grpcWebhookServer := &grpc.Server{
+		Webhooks: webhooks,
+	}
+	grpcServer := grpc.NewGRPCServer(grpcWebhookServer)
+
+	eg.Go(func() error {
+		lis, err := net.Listen("tcp", grpcApiAddress)
+		if err != nil {
+			log.Fatal().Err(err).Msgf("failed to listen on %s", grpcApiAddress)
+			return err
+		}
+		log.Debug().Msgf("grpc api listening on %s", grpcApiAddress)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Error().Err(err).Msg("grpc server error")
+			return err
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		select {
+		case <-gCtx.Done():
+			grpcServer.GracefulStop()
+			return nil
 		}
 	})
 

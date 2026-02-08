@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package webhookrelay.api.v1;
+
+option go_package = "github.com/broswen/webhookrelay/pkg/api/v1;apiv1";
+
+import "google/protobuf/timestamp.proto";
+
+// WebhookRelayService provides webhook management functionality
+service WebhookRelayService {
+  // Get retrieves a single webhook by ID
+  rpc GetWebhook(GetWebhookRequest) returns (GetWebhookResponse);
+  
+  // List retrieves multiple webhooks with pagination
+  rpc ListWebhooks(ListWebhooksRequest) returns (ListWebhooksResponse);
+  
+  // Create creates a new webhook
+  rpc CreateWebhook(CreateWebhookRequest) returns (CreateWebhookResponse);
+}
+
+// Webhook represents a webhook resource
+message Webhook {
+  // Unique identifier for the webhook
+  string id = 1;
+  
+  // Target URL to send the webhook payload to
+  string target = 2;
+  
+  // Base64 encoded bytes payload
+  bytes payload = 3;
+  
+  // Timestamp when the webhook was created
+  google.protobuf.Timestamp created_at = 4;
+  
+  // Timestamp when the webhook was deleted (null if not deleted)
+  optional google.protobuf.Timestamp deleted_at = 5;
+  
+  // Timestamp when the webhook was published (null if not published)
+  optional google.protobuf.Timestamp published_at = 6;
+  
+  // Timestamp when the webhook was provisioned (null if not provisioned)
+  optional google.protobuf.Timestamp provisioned_at = 7;
+  
+  // List of delivery attempts
+  repeated WebhookAttempt attempts = 8;
+  
+  // Current status of the webhook
+  WebhookStatus status = 9;
+}
+
+// WebhookAttempt represents a delivery attempt for a webhook
+message WebhookAttempt {
+  // Timestamp when the attempt was made
+  google.protobuf.Timestamp timestamp = 1;
+  
+  // HTTP response status code from the target
+  int32 status = 2;
+  
+  // Additional attempt information
+  string message = 3;
+}
+
+// WebhookStatus represents the current status of a webhook
+enum WebhookStatus {
+  WEBHOOK_STATUS_UNSPECIFIED = 0;
+  WEBHOOK_STATUS_UNKNOWN = 1;
+  WEBHOOK_STATUS_PENDING = 2;
+  WEBHOOK_STATUS_FAILED = 3;
+  WEBHOOK_STATUS_SUCCEEDED = 4;
+}
+
+// GetWebhookRequest is the request for getting a single webhook
+message GetWebhookRequest {
+  // ID of the webhook to retrieve
+  string webhook_id = 1;
+}
+
+// GetWebhookResponse is the response for getting a single webhook
+message GetWebhookResponse {
+  // The requested webhook
+  Webhook webhook = 1;
+}
+
+// ListWebhooksRequest is the request for listing webhooks
+message ListWebhooksRequest {
+  // Offset for pagination
+  int64 offset = 1;
+  
+  // Limit for pagination
+  int64 limit = 2;
+  
+  // Whether to include deleted webhooks
+  bool deleted = 3;
+}
+
+// ListWebhooksResponse is the response for listing webhooks
+message ListWebhooksResponse {
+  // List of webhooks
+  repeated Webhook webhooks = 1;
+}
+
+// CreateWebhookRequest is the request for creating a webhook
+message CreateWebhookRequest {
+  // Target URL to send the webhook payload to
+  string target = 1;
+  
+  // Base64 encoded bytes payload
+  bytes payload = 2;
+  
+  // Idempotency token for the request
+  string idempotency_token = 3;
+}
+
+// CreateWebhookResponse is the response for creating a webhook
+message CreateWebhookResponse {
+  // The created webhook
+  Webhook webhook = 1;
+}
