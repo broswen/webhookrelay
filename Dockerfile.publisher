@@ -9,6 +9,7 @@ RUN go get -d -v ./...
 # copy go src file(s)
 COPY ./cmd ./cmd
 COPY ./internal ./internal
+COPY ./pkg ./pkg
 # build the binary
 RUN GOOS=linux CGO_ENABLED=1 GOARCH=amd64 go build -o webhookrelay-publisher ./cmd/publisher/*.go
 
