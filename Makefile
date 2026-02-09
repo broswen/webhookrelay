@@ -14,6 +14,9 @@ publish: build
 helm-template:
 	helm template webhookrelay k8s/webhookrelay > k8s/deploy/webhookrelay.yaml
 
+gen-proto:
+	./scripts/gen-proto.sh
+
 test: helm-template
 	go test ./...
 	kubeconform -summary -strict ./k8s/deploy/*.yaml
